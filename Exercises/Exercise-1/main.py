@@ -3,6 +3,7 @@ import requests, zipfile, io
 import aiohttp
 import asyncio
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
 
 download_uris = [
     "https://divvy-tripdata.s3.amazonaws.com/Divvy_Trips_2018_Q4.zip",
@@ -24,17 +25,17 @@ def createFolder(directory: str):
     except OSError:
         print('Error: Creating directory. ' +  directory)
 
-def main():
-    try:
-        for url in download_uris:
-            req = requests.get(url)
+# def main():
+#     try:
+#         for url in download_uris:
+#             req = requests.get(url)
 
-            filename = url.split('/')[-1].split('.')[0] 
-            z = zipfile.ZipFile(io.BytesIO(req.content))
-            z.extract(f"{filename}.csv", path="/Users/belenegozcue/Desktop/data-engineering-practice/Exercises/Exercise-1/downloads/")
-            print('Csv downloaded!')
-    except zipfile.BadZipFile as e:
-        print('Error occured while processing ZIP file: ', e, filename)
+#             filename = url.split('/')[-1].split('.')[0] 
+#             z = zipfile.ZipFile(io.BytesIO(req.content))
+#             z.extract(f"{filename}.csv", path="/Users/belenegozcue/Desktop/data-engineering-practice/Exercises/Exercise-1/downloads/")
+#             print('Csv downloaded!')
+#     except zipfile.BadZipFile as e:
+#         print('Error occured while processing ZIP file: ', e, filename)
 
 # WAY TO DO IT ASYNCHRONOURS USING aiohttp
 
@@ -60,12 +61,29 @@ def main():
 #     await asyncio.gather(*tasks)
 #     print('Already downloaded all of the files!')
 
+# ThreadPoolExecutor
+
+def download_files_with_tpe(url):
+    try:
+        req = requests.get(url)
+        filename = url.split('/')[-1].split('.')[0] 
+        z = zipfile.ZipFile(io.BytesIO(req.content))
+        z.extract(f"{filename}.csv", path="/Users/belenegozcue/Desktop/data-engineering-practice/Exercises/Exercise-1/downloads/")
+        print('Csv downloaded!')
+    except zipfile.BadZipFile as e:
+        print('Error occured while processing ZIP file: ', e, filename) 
+    
+
+start = datetime.now()
+with ThreadPoolExecutor(max_workers=15) as executor:
+    executor.map(download_files_with_tpe, download_uris)
+end = datetime.now()
+print("TIEMPO", end-start)
 
 if __name__ == "__main__":
     now = datetime.now()
-    print(now)
+    # print(now)
     createFolder('/Users/belenegozcue/Desktop/data-engineering-practice/Exercises/Exercise-1/downloads/')
     # asyncio.run(download())
-    main()
     end = datetime.now()
-    print(end - now)
+    # print(end - now)
